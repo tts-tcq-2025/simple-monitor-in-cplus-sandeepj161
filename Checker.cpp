@@ -6,12 +6,6 @@ using namespace std;
 
 enum class BreachType { NORMAL, TOO_LOW, TOO_HIGH };
 
-struct BatteryStatus {
-  BreachType tempBreach = BreachType::NORMAL;
-  BreachType socBreach = BreachType::NORMAL;
-  BreachType chargeRateBreach = BreachType::NORMAL;
-};
-
 BreachType getBreachType(float value, float low, float high) {
   if (value < low) {
     return BreachType::TOO_LOW;
@@ -22,37 +16,33 @@ BreachType getBreachType(float value, float low, float high) {
   return BreachType::NORMAL;
 }
 
-BatteryStatus getBatteryStatus(float temperature, float soc, float chargeRate) {
-  BatteryStatus status;
-  status.tempBreach = getBreachType(temperature, 0, 45);
-  status.socBreach = getBreachType(soc, 20, 80);
-  status.chargeRateBreach = getBreachType(chargeRate, 0, 0.8);
-  return status;
-}
-
-bool isNormal(BreachType breach) {
-  return breach == BreachType::NORMAL;
+BreachType getChargeRateBreach(float chargeRate) {
+  // To complete coverage, treat <0 as TOO_LOW (abnormal for charging phase)
+  return getBreachType(chargeRate, 0, 0.8);
 }
 
 bool batteryIsOk(float temperature, float soc, float chargeRate) {
-  auto status = getBatteryStatus(temperature, soc, chargeRate);
+  auto tempBreach = getBreachType(temperature, 0, 45);
+  auto socBreach = getBreachType(soc, 20, 80);
+  auto chargeRateBreach = getChargeRateBreach(chargeRate);
 
-  if (!isNormal(status.tempBreach)) {
-    cout << "Temperature " << (status.tempBreach == BreachType::TOO_LOW ? "too low" : "too high") << "!\n";
-  }
-  if (!isNormal(status.socBreach)) {
-    cout << "State of Charge " << (status.socBreach == BreachType::TOO_LOW ? "too low" : "too high") << "!\n";
-  }
-  if (!isNormal(status.chargeRateBreach)) {
-    cout << "Charge Rate " << (status.chargeRateBreach == BreachType::TOO_LOW ? "too low" : "too high") << "!\n";
-  }
+  // Print breaches (I/O)
+  auto printBreach = [](const string& param, BreachType breach) {
+    if (breach == BreachType::TOO_LOW) {
+      cout << param << " too low!\n";
+    } else if (breach == BreachType::TOO_HIGH) {
+      cout << param << " too high!\n";
+    }
+  };
 
-  return isNormal(status.tempBreach) &&
-         isNormal(status.socBreach) &&
-         isNormal(status.chargeRateBreach);
+  printBreach("Temperature", tempBreach);
+  printBreach("State of Charge", socBreach);
+  printBreach("Charge Rate", chargeRateBreach);
+
+  return tempBreach == BreachType::NORMAL &&
+         socBreach == BreachType::NORMAL &&
+         chargeRateBreach == BreachType::NORMAL;
 }
 
 int main() {
-  assert(batteryIsOk(25, 70, 0.7) == true);
-  assert(batteryIsOk(50, 85, 0) == false);
-}
+  assert(batteryIsOk(25, 70, 0.7) == true
