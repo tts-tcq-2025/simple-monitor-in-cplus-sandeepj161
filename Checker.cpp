@@ -31,4 +31,14 @@ bool batteryIsOk(float temperature, float soc, float chargeRate) {
 
   printBreach("Temperature", tempBreach);
   printBreach("State of Charge", socBreach);
-  print
+  printBreach("Charge Rate", chargeRateBreach);
+
+  return tempBreach == BreachType::NORMAL &&
+         socBreach == BreachType::NORMAL &&
+         chargeRateBreach == BreachType::NORMAL;
+}
+
+int main() {
+  assert(batteryIsOk(25, 70, 0.7) == true);
+  assert(batteryIsOk(50, 85, 0) == false);
+}
