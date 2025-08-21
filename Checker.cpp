@@ -1,35 +1,55 @@
 #include <assert.h>
 #include <iostream>
+#include <string>
+
 using namespace std;
 
-bool checkTemperature(float temperature) {
-  if (temperature < 0 || temperature > 45) {
-    cout << "Temperature out of range!\n";
-    return false;
+enum class BreachType { NORMAL, TOO_LOW, TOO_HIGH };
+
+struct BatteryStatus {
+  BreachType tempBreach = BreachType::NORMAL;
+  BreachType socBreach = BreachType::NORMAL;
+  BreachType chargeRateBreach = BreachType::NORMAL;
+};
+
+BreachType getBreachType(float value, float low, float high) {
+  if (value < low) {
+    return BreachType::TOO_LOW;
   }
-  return true;
+  if (value > high) {
+    return BreachType::TOO_HIGH;
+  }
+  return BreachType::NORMAL;
 }
 
-bool checkSoc(float soc) {
-  if (soc < 20 || soc > 80) {
-    cout << "State of Charge out of range!\n";
-    return false;
-  }
-  return true;
+BatteryStatus getBatteryStatus(float temperature, float soc, float chargeRate) {
+  BatteryStatus status;
+  status.tempBreach = getBreachType(temperature, 0, 45);
+  status.socBreach = getBreachType(soc, 20, 80);
+  status.chargeRateBreach = getBreachType(chargeRate, 0, 0.8);
+  return status;
 }
 
-bool checkChargeRate(float chargeRate) {
-  if (chargeRate > 0.8) {
-    cout << "Charge Rate out of range!\n";
-    return false;
-  }
-  return true;
+bool isNormal(BreachType breach) {
+  return breach == BreachType::NORMAL;
 }
 
 bool batteryIsOk(float temperature, float soc, float chargeRate) {
-  return checkTemperature(temperature) &&
-         checkSoc(soc) &&
-         checkChargeRate(chargeRate);
+  auto status = getBatteryStatus(temperature, soc, chargeRate);
+
+  if (!isNormal(status.tempBreach)) {
+    cout << "Temperature " << (status.tempBreach == BreachType::TOO_LOW ? "too low" : "too high") << "!\n";
+  }
+  if (!isNormal(status.socBreach)) {
+    cout << "State of Charge " << (status.socBreach == BreachType::TOO_LOW ? "too low" : "too high") << "!\n";
+  }
+  if (!isNormal(status.chargeRateBreach)) {
+    cout << "Charge Rate " << (status.chargeRateBreach == BreachType::TOO_LOW ? "too low" : "too high") << "!\n";
+  }
+
+  return isNormal(status.tempBreach) &&
+         isNormal(status.socBreach) &&
+         isNormal(status.chargeRateBreach);
 }
 
 int main() {
