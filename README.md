@@ -52,6 +52,10 @@ Can we add new functionality without disturbing the old?
 
 ## Keep it Simple
 
+## Extension
+
+Care-givers need early warnings to take action, in addition to the alarm that you print after the limit is breached. Introduce a 'warning' level with a tolerance of 1.5% of the upper-limit.
+
 Shorten the Semantic distance
 
 - Procedural to express sequence
