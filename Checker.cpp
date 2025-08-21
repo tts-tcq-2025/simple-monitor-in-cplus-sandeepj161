@@ -1,41 +1,66 @@
 #include <assert.h>
 #include <iostream>
 #include <string>
+#include <vector>
+#include <algorithm>
+#include <iterator>
 
 using namespace std;
 
-enum class BreachType { NORMAL, TOO_LOW, TOO_HIGH };
+enum class Condition { TOO_LOW, APPROACH_LOW, NORMAL, APPROACH_HIGH, TOO_HIGH };
 
-BreachType getBreachType(float value, float low, float high) {
-  if (value < low) {
-    return BreachType::TOO_LOW;
-  }
-  if (value > high) {
-    return BreachType::TOO_HIGH;
-  }
-  return BreachType::NORMAL;
+Condition getCondition(float value, float low, float high) {
+  float tol = 0.05f * high;
+  vector<float> boundaries {low, low + tol, high - tol, high};
+  auto it = upper_bound(boundaries.begin(), boundaries.end(), value);
+  int index = distance(boundaries.begin(), it);
+  return static_cast<Condition>(index);
 }
 
-void printBreach(const string& param, BreachType breach) {
-  if (breach == BreachType::TOO_LOW) {
-    cout << param << " too low!\n";
-  } else if (breach == BreachType::TOO_HIGH) {
-    cout << param << " too high!\n";
+string getTemperatureMessage(Condition cond) {
+  if (cond == Condition::NORMAL) return "";
+  bool isLow = (cond == Condition::TOO_LOW || cond == Condition::APPROACH_LOW);
+  if (cond == Condition::TOO_LOW || cond == Condition::TOO_HIGH) {
+    return "Temperature too " + string(isLow ? "low" : "high") + "!\n";
+  } else {
+    return "Warning: Approaching " + string(isLow ? "under-temperature" : "over-temperature") + "!\n";
+  }
+}
+
+string getSocMessage(Condition cond) {
+  if (cond == Condition::NORMAL) return "";
+  bool isLow = (cond == Condition::TOO_LOW || cond == Condition::APPROACH_LOW);
+  if (cond == Condition::TOO_LOW || cond == Condition::TOO_HIGH) {
+    return "State of Charge too " + string(isLow ? "low" : "high") + "!\n";
+  } else {
+    return "Warning: Approaching " + string(isLow ? "discharge" : "charge-peak") + "!\n";
+  }
+}
+
+string getChargeRateMessage(Condition cond) {
+  if (cond == Condition::NORMAL) return "";
+  bool isLow = (cond == Condition::TOO_LOW || cond == Condition::APPROACH_LOW);
+  if (cond == Condition::TOO_LOW || cond == Condition::TOO_HIGH) {
+    return "Charge Rate too " + string(isLow ? "low" : "high") + "!\n";
+  } else {
+    return "Warning: Approaching " + string(isLow ? "low charge-rate" : "peak charge-rate") + "!\n";
   }
 }
 
 bool batteryIsOk(float temperature, float soc, float chargeRate) {
-  auto tempBreach = getBreachType(temperature, 0, 45);
-  auto socBreach = getBreachType(soc, 20, 80);
-  auto chargeRateBreach = getBreachType(chargeRate, 0, 0.8);
+  auto tempCond = getCondition(temperature, 0, 45);
+  auto socCond = getCondition(soc, 20, 80);
+  auto chargeRateCond = getCondition(chargeRate, 0, 0.8);
 
-  printBreach("Temperature", tempBreach);
-  printBreach("State of Charge", socBreach);
-  printBreach("Charge Rate", chargeRateBreach);
+  cout << getTemperatureMessage(tempCond);
+  cout << getSocMessage(socCond);
+  cout << getChargeRateMessage(chargeRateCond);
 
-  return tempBreach == BreachType::NORMAL &&
-         socBreach == BreachType::NORMAL &&
-         chargeRateBreach == BreachType::NORMAL;
+  bool tempOk = (tempCond != Condition::TOO_LOW && tempCond != Condition::TOO_HIGH);
+  bool socOk = (socCond != Condition::TOO_LOW && socCond != Condition::TOO_HIGH);
+  bool chargeRateOk = (chargeRateCond != Condition::TOO_LOW && chargeRateCond != Condition::TOO_HIGH);
+
+  return tempOk && socOk && chargeRateOk;
 }
 
 int main() {
